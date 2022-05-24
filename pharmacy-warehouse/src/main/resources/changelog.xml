@@ -1,0 +1,197 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+      http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.1.xsd"
+        logicalFilePath="scripts">
+
+    <changeSet id="1" author="Nadezhda Tarasova">
+        <sql>
+            CREATE TABLE cities
+            (
+                id   SERIAL,
+                name VARCHAR(50) NOT NULL,
+                CONSTRAINT cities_name_key UNIQUE (name),
+                CONSTRAINT cities_pkey PRIMARY KEY (id)
+            );
+        </sql>
+    </changeSet>
+
+    <changeSet id="2" author="Nadezhda Tarasova">
+        <sql>
+            CREATE TABLE streets
+            (
+                id      SERIAL,
+                name    VARCHAR(50) NOT NULL,
+                city_id INTEGER     NOT NULL,
+                CONSTRAINT streets_name_key UNIQUE (name),
+                CONSTRAINT streets_pkey PRIMARY KEY (id),
+                CONSTRAINT streets_city_id_fkey FOREIGN KEY (city_id) REFERENCES cities (id) ON DELETE CASCADE
+            );
+        </sql>
+    </changeSet>
+
+    <changeSet id="3" author="Nadezhda Tarasova">
+        <sql>
+            CREATE TABLE addresses
+            (
+                id        SERIAL,
+                street_id INTEGER     NOT NULL,
+                house     VARCHAR(10) NOT NULL,
+                CONSTRAINT addresses_pkey PRIMARY KEY (id),
+                CONSTRAINT addresses_street_id_fkey FOREIGN KEY (street_id) REFERENCES streets (id) ON DELETE SET NULL
+            );
+        </sql>
+    </changeSet>
+
+    <changeSet id="4" author="Nadezhda Tarasova">
+        <sql>
+            CREATE TABLE accounts
+            (
+                iban    VARCHAR(32),
+                balance FLOAT NOT NULL,
+                CONSTRAINT accounts_pkey PRIMARY KEY (iban)
+            );
+        </sql>
+    </changeSet>
+
+    <changeSet id="5" author="Nadezhda Tarasova">
+        <sql>
+            CREATE TABLE suppliers
+            (
+                id           SERIAL,
+                name         VARCHAR(50) NOT NULL,
+                address_id   INTEGER,
+                phone        VARCHAR(13) NOT NULL,
+                account_iban VARCHAR(32),
+                CONSTRAINT suppliers_name_key UNIQUE (name),
+                CONSTRAINT suppliers_phone_key UNIQUE (phone),
+                CONSTRAINT suppliers_pkey PRIMARY KEY (id),
+                CONSTRAINT suppliers_address_id_fkey FOREIGN KEY (address_id) REFERENCES addresses (id) ON DELETE SET NULL,
+                CONSTRAINT suppliers_account_iban_fkey FOREIGN KEY (account_iban) REFERENCES accounts (iban) ON DELETE SET NULL
+            );
+        </sql>
+    </changeSet>
+
+    <changeSet id="6" author="Nadezhda Tarasova">
+        <sql>
+            CREATE TABLE products
+            (
+                id                    SERIAL,
+                name                  VARCHAR(50) NOT NULL,
+                active_substance_name VARCHAR(50) NOT NULL,
+                price                 FLOAT       NOT NULL,
+                supplier_id           INTEGER     NOT NULL,
+                CONSTRAINT products_name_key UNIQUE (name),
+                CONSTRAINT products_pkey PRIMARY KEY (id),
+                CONSTRAINT products_supplier_id_fkey FOREIGN KEY (supplier_id) REFERENCES suppliers (id) ON DELETE CASCADE
+            );
+        </sql>
+    </changeSet>
+
+
+    <changeSet id="7" author="Nadezhda Tarasova">
+        <sql>
+            CREATE TABLE pharmacies
+            (
+                id           SERIAL,
+                name         VARCHAR(50) NOT NULL,
+                address_id   INTEGER,
+                phone        VARCHAR(13) NOT NULL,
+                account_iban VARCHAR(32),
+                CONSTRAINT pharmacies_name_key UNIQUE (name),
+                CONSTRAINT pharmacies_phone_key UNIQUE (phone),
+                CONSTRAINT pharmacies_pkey PRIMARY KEY (id),
+                CONSTRAINT pharmacies_account_iban_fkey FOREIGN KEY (account_iban) REFERENCES accounts (iban) ON DELETE SET NULL,
+                CONSTRAINT pharmacies_address_id_fkey FOREIGN KEY (address_id) REFERENCES addresses (id) ON DELETE SET NULL
+            );
+        </sql>
+    </changeSet>
+
+    <changeSet id="8" author="Nadezhda Tarasova">
+        <sql>
+            CREATE TABLE staff
+            (
+                id            SERIAL,
+                first_name    VARCHAR(40)  NOT NULL,
+                last_name     VARCHAR(40)  NOT NULL,
+                patronymic    VARCHAR(40)  NOT NULL,
+                date_of_birth DATE         NOT NULL,
+                phone         VARCHAR(13)  NOT NULL,
+                email         VARCHAR(40)  NOT NULL,
+                position      VARCHAR(100) NOT NULL,
+                pharmacy_id   INTEGER      NOT NULL,
+                CONSTRAINT staff_phone_key UNIQUE (phone),
+                CONSTRAINT staff_email_key UNIQUE (email),
+                CONSTRAINT staff_pkey PRIMARY KEY (id),
+                CONSTRAINT staff_pharmacy_id_fkey FOREIGN KEY (pharmacy_id) REFERENCES pharmacies (id) ON DELETE CASCADE
+            );
+        </sql>
+    </changeSet>
+
+    <changeSet id="9" author="Nadezhda Tarasova">
+        <sql>
+            CREATE TABLE warehouses
+            (
+                id          SERIAL,
+                address_id  INTEGER,
+                phone       VARCHAR(13) NOT NULL,
+                pharmacy_id INTEGER     NOT NULL,
+                employee_id INTEGER,
+                CONSTRAINT warehouses_phone_key UNIQUE (phone),
+                CONSTRAINT warehouses_pkey PRIMARY KEY (id),
+                CONSTRAINT warehouses_pharmacy_id_fkey FOREIGN KEY (pharmacy_id) REFERENCES pharmacies (id) ON DELETE CASCADE,
+                CONSTRAINT warehouses_employee_id_fkey FOREIGN KEY (employee_id) REFERENCES staff (id) ON DELETE SET NULL,
+                CONSTRAINT warehouses_address_id_fkey FOREIGN KEY (address_id) REFERENCES addresses (id) ON DELETE SET NULL
+            );
+        </sql>
+    </changeSet>
+
+    <changeSet id="10" author="Nadezhda Tarasova">
+        <sql>
+            CREATE TABLE orders
+            (
+                id          SERIAL,
+                date        DATE    NOT NULL,
+                time        TIME    NOT NULL,
+                pharmacy_id INTEGER NOT NULL,
+                CONSTRAINT orders_pkey PRIMARY KEY (id),
+                CONSTRAINT orders_pharmacy_id_fkey FOREIGN KEY (pharmacy_id) REFERENCES pharmacies (id) ON DELETE CASCADE
+            );
+        </sql>
+    </changeSet>
+
+    <changeSet id="11" author="Nadezhda Tarasova">
+        <sql>
+            CREATE TABLE orders_products
+            (
+                id           SERIAL,
+                order_id    INTEGER NOT NULL,
+                product_id  INTEGER NOT NULL,
+                amount      INTEGER NOT NULL DEFAULT 1,
+                employee_id INTEGER NOT NULL,
+                CONSTRAINT orders_products_pkey PRIMARY KEY (id),
+                CONSTRAINT orders_products_order_id_pkey FOREIGN KEY (order_id) REFERENCES orders (id) ON DELETE CASCADE,
+                CONSTRAINT orders_products_employee_id_pkey FOREIGN KEY (employee_id) REFERENCES staff (id) ON DELETE CASCADE,
+                CONSTRAINT orders_products_product_id_fkey FOREIGN KEY (product_id) REFERENCES products (id) ON DELETE CASCADE
+            );
+        </sql>
+    </changeSet>
+
+    <changeSet id="12" author="Nadezhda Tarasova">
+        <sql>
+            CREATE TABLE warehouses_products
+            (
+                id           SERIAL,
+                warehouse_id INTEGER NOT NULL,
+                product_id   INTEGER NOT NULL,
+                amount       INTEGER NOT NULL DEFAULT 1,
+                CONSTRAINT warehouses_products_pkey PRIMARY KEY (id),
+                CONSTRAINT warehouses_products_warehouse_id_fkey FOREIGN KEY (warehouse_id) REFERENCES warehouses (id) ON DELETE CASCADE,
+                CONSTRAINT warehouses_products_product_id_fkey FOREIGN KEY (product_id) REFERENCES products (id) ON DELETE CASCADE
+            );
+        </sql>
+    </changeSet>
+
+</databaseChangeLog>
